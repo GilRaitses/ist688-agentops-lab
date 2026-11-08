@@ -1,6 +1,6 @@
 # IST 688 AgentOps Lab
 
-Fork this repo, then paste the block below to your coding agent. It will add an AgentOps page to your existing private Streamlit course app and use the OpenAI key already in that app’s Streamlit secrets.
+Fork this repo, then paste the block below to your coding agent. It will add an AgentOps page to your existing private Streamlit course app and use the OpenAI key already in that app’s Streamlit secrets. The same block also tells the agent how to run the lab exercises and what structured outputs to produce.
 
 ```text
 Add the IST 688 AgentOps lab from https://github.com/GilRaitses/ist688-agentops-lab into my existing private Streamlit course app as a page (for example pages/AgentOps.py). Do not replace the home page. Do not create a separate public app unless I ask.
@@ -11,7 +11,24 @@ Use the OpenAI key already stored in this course app’s Streamlit secrets (st.s
 
 Do not add Anthropic or Claude. Do not commit secrets. Do not change the course app’s visibility.
 
-Add any missing packages from the public repo requirements (streamlit, pydantic, pandas, numpy, plotly, duckdb) to the course app requirements without removing existing ones.
+Add any missing packages from the public repo requirements (streamlit, pydantic, pandas, numpy, plotly, duckdb, tiktoken) to the course app requirements without removing existing ones.
+
+## Agent instructions: RUNNING THE EXERCISES
+
+After the page is available, run the lab exercises end to end. Do not invent numbers. Use only values shown on screen or returned by the app.
+
+1. Open/run the AgentOps sandbox page (Interactive In-Class Lab Sandbox, or the course-app page you added).
+2. Click/run the concurrent Function_A and Function_B exercise so AgentOps_Logger records spans beside them.
+3. Inspect the recorded spans. Report caller, target, latency_ms, input_tokens and output_tokens for each span.
+4. Open the TOON-versus-JSON step. Compare the exact on-screen JSON string and the exact on-screen TOON string. Report the tiktoken token count of the JSON view and the tiktoken token count of the TOON view. Do not report a savings percent, compression ratio, efficiency score, or slogan that TOON saved X percent versus JSON.
+5. Report per-span token velocity as (input_tokens + output_tokens) / (latency_ms / 1000) when latency_ms > 0. Units are tokens per second for that span. Use the span’s recorded caller, target, latency_ms, input_tokens and output_tokens.
+6. Run a DuckDB query over the captured spans (Local Trace Query mode or equivalent on the page).
+7. Produce structured outputs (tables, bullets or short labeled fields), not a prose essay. Annotate every output with all three of:
+   - Significance: what this output means in the lab
+   - Industry mapping: how the same idea shows up in OpenTelemetry parent/child spans and gen_ai.usage (gen_ai.usage.input_tokens, gen_ai.usage.output_tokens), LangSmith, Langfuse, Arize Phoenix, Datadog LLM Observability, and AgentOps prompt/completion tokens
+   - Problems this kind of trace can solve: who called whom, how long a step took, how many tokens it used, malformed records, and reconstructing a run as a sequence of named spans
+
+Keep Function_A, Function_B and AgentOps_Logger. No Claude. No ClickHouse. No Pinot. No savings slogans. No invented dollar figures, latency targets or savings percents.
 ```
 
 Public repo: https://github.com/GilRaitses/ist688-agentops-lab
@@ -87,4 +104,4 @@ Build a small AgentOps logger (not a database product):
 
 ## Requirements
 
-Listed in `requirements.txt`: `streamlit`, `pydantic`, `pandas`, `numpy`, `plotly`, `duckdb`.
+Listed in `requirements.txt`: `streamlit`, `pydantic`, `pandas`, `numpy`, `plotly`, `duckdb`, `tiktoken`.
