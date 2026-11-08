@@ -260,7 +260,7 @@ st.sidebar.markdown(f"""
 if app_mode == "Talk recap":
     st.title("AgentOps: Multi-agent observability tools for traceable telemetry")
     st.caption(
-        "Optional recap of the class talk in the 11-slide teaching order. "
+        "Optional recap of the class talk in the 13-slide teaching order. "
         "Present from the slide deck, then use this app for the lab."
     )
 
@@ -272,10 +272,12 @@ if app_mode == "Talk recap":
         "Slide 5: AgentOps_Logger sits beside the work",
         "Slide 6: What to record",
         "Slide 7: Write the log in a compact readable form / TOON",
-        "Slide 8: What a trace helps you notice",
-        "Slide 9: Lab brief: build a small AgentOps logger",
-        "Slide 10: How to start the lab demo",
-        "Slide 11: Questions",
+        "Slide 8: How it works: Which tools does the lab use?",
+        "Slide 9: What a trace helps you notice",
+        "Slide 10: Why is this useful?",
+        "Slide 11: Lab brief: build a small AgentOps logger",
+        "Slide 12: How to start the lab demo",
+        "Slide 13: Questions",
     ]
 
     current_slide = st.select_slider("Presentation Flow Navigator:", options=slides)
@@ -403,6 +405,22 @@ if app_mode == "Talk recap":
             )
 
     elif current_slide == slides[7]:
+        st.subheader("How it works: Which tools does the lab use?")
+        st.markdown("""
+        * **Streamlit** — interactive lab UI and sandbox steps
+        * **Pydantic** — validates span records before they enter the log
+        * **AgentOps_Logger** — records spans beside Function_A and Function_B
+        * **TOON** — compact readable serialization of collected spans
+        * **DuckDB** — local in-process queries over session spans
+        * **tiktoken** — tokenizer counts of the exact JSON and TOON strings on screen
+        """)
+        with st.expander("Speaker notes"):
+            st.write(
+                "Walk the stack students will touch in the sandbox. "
+                "Keep the focus on what each tool does in this lab."
+            )
+
+    elif current_slide == slides[8]:
         st.subheader("What a trace helps you notice")
         st.markdown("""
         * Who called whom
@@ -411,13 +429,36 @@ if app_mode == "Talk recap":
         * Token velocity for a span: (input_tokens + output_tokens) over that span's latency
         * Silent execution failures become visible
         """)
-        st.info("Usefulness: debugging and cost visibility in a multi-agent run.")
         with st.expander("Speaker notes"):
             st.write(
                 "Keep claims grounded in what a complete trace makes visible."
             )
 
-    elif current_slide == slides[8]:
+    elif current_slide == slides[9]:
+        st.subheader("Why is this useful?")
+        st.markdown("""
+        Industry tools use the same ideas the lab practices:
+
+        * **OpenTelemetry** — traces as nested spans with duration and usage attributes
+        * **LangSmith** — traces of what agents did, used for debugging and monitoring
+        * **Langfuse** — observations for LLM calls, tools, latency and token usage
+        * **Phoenix** — nested spans and inspection of latency and cost drivers
+        * **Datadog** — Agent Observability traces with input_tokens and output_tokens
+        * **AgentOps** — span records for agent and tool steps
+        * **`gen_ai.usage`** — shared naming for input and output token counts
+          (`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`)
+        """)
+        st.caption(
+            "Map lab fields to industry terms. Do not invent savings percents."
+        )
+        with st.expander("Speaker notes"):
+            st.write(
+                "Show the mapping from caller, target, latency_ms, input_tokens and "
+                "output_tokens to common vendor and OpenTelemetry usage names. "
+                "No savings, compression or efficiency slogans."
+            )
+
+    elif current_slide == slides[10]:
         st.subheader("Lab brief: build a small AgentOps logger")
         st.markdown("""
         Students build a small AgentOps logger not a database product.
@@ -434,7 +475,7 @@ if app_mode == "Talk recap":
                 "Keep this slide short so the how-to-start demo and lab can begin."
             )
 
-    elif current_slide == slides[9]:
+    elif current_slide == slides[11]:
         st.subheader("How to start the lab demo")
         st.markdown("""
         1. Open https://github.com/GilRaitses/ist688-agentops-lab
