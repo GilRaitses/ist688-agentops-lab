@@ -56,27 +56,52 @@ st.markdown("""
 PROVIDER_KEY_NAMES = ("OPENAI_API_KEY", "DEEPSEEK_API_KEY", "API_KEY")
 
 
-def _secret_value(name: str) -> Optional[str]:
-    try:
-        value = st.secrets[name]
-    except Exception:
-        return None
+def _as_secret_text(value: Any) -> Optional[str]:
     if value is None:
         return None
     text = str(value).strip()
     return text or None
 
 
+def _secret_value(name: str) -> Optional[str]:
+    try:
+        value = st.secrets[name]
+    except Exception:
+        return None
+    return _as_secret_text(value)
+
+
+def _nested_openai_api_key() -> Optional[str]:
+    try:
+        openai_block = st.secrets["openai"]
+    except Exception:
+        return None
+    try:
+        value = openai_block["api_key"]
+    except Exception:
+        try:
+            value = openai_block.get("api_key")  # type: ignore[attr-defined]
+        except Exception:
+            return None
+    return _as_secret_text(value)
+
+
 def require_provider_api_key() -> str:
-    """Require one provider key in Streamlit secrets. Returns the key name only."""
-    for name in PROVIDER_KEY_NAMES:
+    """Require one provider key in Streamlit secrets. Returns the key label only."""
+    if _secret_value("OPENAI_API_KEY"):
+        return "OPENAI_API_KEY"
+    if _nested_openai_api_key():
+        return "openai.api_key"
+    for name in ("DEEPSEEK_API_KEY", "API_KEY"):
         if _secret_value(name):
             return name
     st.error(
-        "A provider API key is required before this lab app can run.\n\n"
+        "Streamlit secrets need an OpenAI (or other provider) key before "
+        "this lab app can run.\n\n"
         "Add one of these in `.streamlit/secrets.toml` locally, or in "
         "Streamlit Community Cloud app secrets:\n"
         "- `OPENAI_API_KEY`\n"
+        "- nested `openai.api_key`\n"
         "- `DEEPSEEK_API_KEY`\n"
         "- `API_KEY` (generic provider key)\n\n"
         "Do not commit secrets.toml. This app never displays your key."
@@ -84,9 +109,13 @@ def require_provider_api_key() -> str:
     st.code(
         '# .streamlit/secrets.toml\n'
         'OPENAI_API_KEY = "your-key-here"\n'
+        '\n'
+        '# or nested form:\n'
+        '# [openai]\n'
+        '# api_key = "your-key-here"\n'
+        '\n'
         '# or\n'
         '# DEEPSEEK_API_KEY = "your-key-here"\n'
-        '# or\n'
         '# API_KEY = "your-key-here"',
         language="toml",
     )
@@ -215,16 +244,17 @@ if app_mode == "Talk recap":
 
     slides = [
         "Slide 1: Title",
-        "Slide 2: Where class left off",
-        "Slide 3: What changes with more agents",
-        "Slide 4: Why print statements go dark",
-        "Slide 5: A reasoning trace is spans",
-        "Slide 6: AgentOps as a non-blocking logger",
-        "Slide 7: What to record",
-        "Slide 8: Compact TOON log form",
-        "Slide 9: What a trace helps you notice",
-        "Slide 10: In-class lab brief",
-        "Slide 11: Questions",
+        "Slide 2: Start the app now",
+        "Slide 3: Where class left off",
+        "Slide 4: What changes with more agents",
+        "Slide 5: Why print statements go dark",
+        "Slide 6: A reasoning trace is spans",
+        "Slide 7: AgentOps as a non-blocking logger",
+        "Slide 8: What to record",
+        "Slide 9: Compact TOON log form",
+        "Slide 10: What a trace helps you notice",
+        "Slide 11: In-class lab brief",
+        "Slide 12: Questions",
     ]
 
     current_slide = st.select_slider("Presentation Flow Navigator:", options=slides)
@@ -235,15 +265,34 @@ if app_mode == "Talk recap":
         * Multi-Agent Systems teach-in
         * Connects the functions lecture to watching several agents work at once
         * About 10 minutes talk then about 10 minutes lab
+        * Start the app setup now so you can try it during the talk
         """)
         with st.expander("Speaker notes"):
             st.write(
                 "Say that the group is teaching Multi-Agent Systems and that "
                 "the talk connects today's functions lecture to the problem of "
-                "watching several agents work at once."
+                "watching several agents work at once. Point to the next slide "
+                "for the README paste block."
             )
 
     elif current_slide == slides[1]:
+        st.subheader("Start the app now (during the talk)")
+        st.markdown("""
+        1. Open https://github.com/GilRaitses/ist688-agentops-lab
+        2. Copy the paste block at the top of the README
+        3. Give that block to your coding agent
+
+        Your agent should add the lab as a page in your existing private Streamlit
+        course app (for example `pages/AgentOps.py`) and use the OpenAI key already
+        in that app's Streamlit secrets.
+        """)
+        with st.expander("Speaker notes"):
+            st.write(
+                "Give classmates a moment to open the repo and paste the README "
+                "block to their coding agent so they can use the app while the talk continues."
+            )
+
+    elif current_slide == slides[2]:
         st.subheader("Where class left off: one model and a tool")
         st.markdown("""
         * User asks a question
@@ -266,7 +315,7 @@ if app_mode == "Talk recap":
                 "can still see the whole path when only one agent is involved."
             )
 
-    elif current_slide == slides[2]:
+    elif current_slide == slides[3]:
         st.subheader("What changes when more than one agent is involved")
         st.markdown("""
         * More than one agent can run at the same time
@@ -279,7 +328,7 @@ if app_mode == "Talk recap":
                 "Keep the focus on visibility of the run path."
             )
 
-    elif current_slide == slides[3]:
+    elif current_slide == slides[4]:
         st.subheader("Why ordinary print statements go dark")
         st.markdown("""
         * Print statements leave out who called whom, how long a step took, and how many tokens it used
@@ -292,7 +341,7 @@ if app_mode == "Talk recap":
                 "when agents run together."
             )
 
-    elif current_slide == slides[4]:
+    elif current_slide == slides[5]:
         st.subheader("A reasoning trace is a sequence of spans")
         c1, c2, c3 = st.columns(3)
         c1.info("**Thought**\n\nPlanning before action")
@@ -310,7 +359,7 @@ if app_mode == "Talk recap":
                 "Draw a parent and child so students can see the caller and the target."
             )
 
-    elif current_slide == slides[5]:
+    elif current_slide == slides[6]:
         st.subheader("AgentOps as a non-blocking logger")
         st.markdown("""
         * The logger sits beside the agents not inside their answers
@@ -330,7 +379,7 @@ if app_mode == "Talk recap":
                 "functions keep running while records enter a queue."
             )
 
-    elif current_slide == slides[6]:
+    elif current_slide == slides[7]:
         st.subheader("What to record")
         st.markdown("""
         Lab fields checked with a Pydantic model:
@@ -344,11 +393,10 @@ if app_mode == "Talk recap":
         st.info("A malformed record is rejected before it enters the log.")
         with st.expander("Speaker notes"):
             st.write(
-                "Stay with the lab fields. Do not add scoring gateways or "
-                "database columns the lab does not use."
+                "Stay with the lab fields. Avoid storage columns the lab does not use."
             )
 
-    elif current_slide == slides[7]:
+    elif current_slide == slides[8]:
         st.subheader("Writing the log in a compact form")
         st.markdown("""
         * Field names declared once at the top
@@ -370,7 +418,7 @@ if app_mode == "Talk recap":
                 "or token-savings percents."
             )
 
-    elif current_slide == slides[8]:
+    elif current_slide == slides[9]:
         st.subheader("What a trace helps you notice")
         st.markdown("""
         * Who called whom
@@ -381,11 +429,10 @@ if app_mode == "Talk recap":
         st.info("Usefulness: debugging and cost visibility in a multi-agent run.")
         with st.expander("Speaker notes"):
             st.write(
-                "Do not claim enterprise predictability or storage-engine performance "
-                "you have not measured."
+                "Keep claims grounded in what a complete trace makes visible."
             )
 
-    elif current_slide == slides[9]:
+    elif current_slide == slides[10]:
         st.subheader("In-class lab brief")
         st.markdown("""
         Students build a small AgentOps logger not a database product.
@@ -398,13 +445,12 @@ if app_mode == "Talk recap":
         **Rubric (10 points):** 3 for non-blocking concurrency, 4 for the schema and 3 for the TOON output.
         """)
         st.success(
-            "Starter app: fork the public repo listed on the class lab brief slide "
-            "then run `streamlit run app.py`."
+            "Repo and README paste block were shared at the start of the talk: "
+            "https://github.com/GilRaitses/ist688-agentops-lab"
         )
         with st.expander("Speaker notes"):
             st.write(
-                "Keep this slide short so the lab can start on time. Point students "
-                "to the public GitHub repo URL on the class deck."
+                "Keep this slide short. Setup already happened on the opening slide."
             )
 
     else:
@@ -412,7 +458,7 @@ if app_mode == "Talk recap":
         st.markdown("Open floor for class questions after the talk or after the lab.")
         with st.expander("Speaker notes"):
             st.write(
-                "Use whichever timing the session needs. Solution review is instructor-only."
+                "Use whichever timing the session needs."
             )
 
 # ==========================================
