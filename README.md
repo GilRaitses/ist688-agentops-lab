@@ -2,9 +2,25 @@
 
 Standalone Streamlit lab for **AgentOps: seeing what multi-agent systems actually did**.
 
-The app shows two concurrent functions (`Function_A` and `Function_B`) with an `AgentOps_Logger` recording spans beside them. It needs **no paid API keys**. Model labels in the UI are local simulation labels only.
+The app shows two concurrent functions (`Function_A` and `Function_B`) with an `AgentOps_Logger` recording spans beside them. A provider API key is required in Streamlit secrets before the app will run.
 
 Public repo for class forks: https://github.com/GilRaitses/ist688-agentops-lab
+
+## Secrets (required)
+
+Add one of these keys in `.streamlit/secrets.toml` (local) or in Streamlit Community Cloud app secrets:
+
+- `OPENAI_API_KEY`
+- `DEEPSEEK_API_KEY`
+- `API_KEY` (generic provider key)
+
+Example `.streamlit/secrets.toml`:
+
+```toml
+OPENAI_API_KEY = "your-key-here"
+```
+
+Do not commit `secrets.toml`. The app never prints, logs, or displays the key value. Anthropic / Claude keys are not used.
 
 ## Fork and run locally
 
@@ -17,13 +33,14 @@ Public repo for class forks: https://github.com/GilRaitses/ist688-agentops-lab
 pip install -r requirements.txt
 ```
 
-5. Start the app:
+5. Create `.streamlit/secrets.toml` with one provider key (see above).
+6. Start the app:
 
 ```bash
 streamlit run app.py
 ```
 
-6. Open the local URL Streamlit prints (usually `http://localhost:8501`).
+7. Open the local URL Streamlit prints (usually `http://localhost:8501`).
 
 ## Deploy on Streamlit Community Cloud
 
@@ -31,7 +48,8 @@ streamlit run app.py
 2. Sign in at [share.streamlit.io](https://share.streamlit.io).
 3. Click **New app**.
 4. Select your fork, branch `main` and main file path `app.py`.
-5. Deploy. No secrets or API keys are required.
+5. In the app settings, add secrets for `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, or `API_KEY`.
+6. Deploy.
 
 ## What you will do in the lab
 

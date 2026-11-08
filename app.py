@@ -50,6 +50,53 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
+# PROVIDER API KEY GATE (st.secrets)
+# Never print, log, or display the key value.
+# ==========================================
+PROVIDER_KEY_NAMES = ("OPENAI_API_KEY", "DEEPSEEK_API_KEY", "API_KEY")
+
+
+def _secret_value(name: str) -> Optional[str]:
+    try:
+        value = st.secrets[name]
+    except Exception:
+        return None
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def require_provider_api_key() -> str:
+    """Require one provider key in Streamlit secrets. Returns the key name only."""
+    for name in PROVIDER_KEY_NAMES:
+        if _secret_value(name):
+            return name
+    st.error(
+        "A provider API key is required before this lab app can run.\n\n"
+        "Add one of these in `.streamlit/secrets.toml` locally, or in "
+        "Streamlit Community Cloud app secrets:\n"
+        "- `OPENAI_API_KEY`\n"
+        "- `DEEPSEEK_API_KEY`\n"
+        "- `API_KEY` (generic provider key)\n\n"
+        "Do not commit secrets.toml. This app never displays your key."
+    )
+    st.code(
+        '# .streamlit/secrets.toml\n'
+        'OPENAI_API_KEY = "your-key-here"\n'
+        '# or\n'
+        '# DEEPSEEK_API_KEY = "your-key-here"\n'
+        '# or\n'
+        '# API_KEY = "your-key-here"',
+        language="toml",
+    )
+    st.stop()
+    return ""  # unreachable; keeps type checkers happy
+
+
+_configured_key_name = require_provider_api_key()
+
+# ==========================================
 # SESSION STATE INITIALIZATION
 # ==========================================
 if "telemetry_logs" not in st.session_state:
@@ -151,11 +198,12 @@ app_mode = st.sidebar.radio(
 )
 
 st.sidebar.divider()
-st.sidebar.markdown("""
+st.sidebar.markdown(f"""
 **Course:** IST 688  
 **Topic:** Multi-Agent Observability  
 **Local query engine:** DuckDB  
 **Lab focus:** traces not console scrap  
+**Provider key:** configured (`{_configured_key_name}`)  
 """)
 
 # ==========================================
@@ -186,7 +234,7 @@ if app_mode == "Talk recap":
         st.markdown("""
         * Multi-Agent Systems teach-in
         * Connects the functions lecture to watching several agents work at once
-        * About 30 minutes talk then a 30-minute lab
+        * About 10 minutes talk then about 10 minutes lab
         """)
         with st.expander("Speaker notes"):
             st.write(
@@ -234,7 +282,7 @@ if app_mode == "Talk recap":
     elif current_slide == slides[3]:
         st.subheader("Why ordinary print statements go dark")
         st.markdown("""
-        * A printed line rarely names who called whom, how long a step took or how many tokens it used
+        * Print statements leave out who called whom, how long a step took, and how many tokens it used
         * Silent execution failures get missed
         """)
         st.warning("A multi-agent run needs a trace not a scrap of console output.")
@@ -403,7 +451,7 @@ elif app_mode == "Interactive In-Class Lab Sandbox":
             )
         with colB:
             model_selection = st.selectbox(
-                "Simulated local model label (no paid API calls):",
+                "Provider model label (uses Streamlit secrets; key never shown):",
                 ["gpt-4o-mini", "deepseek-r1-distill"],
             )
             prompt_hash = st.text_input("Prompt version hash:", value="a9f4c3b1e802")
