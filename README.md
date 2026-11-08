@@ -1,14 +1,47 @@
 # IST 688 AgentOps Lab
 
-Standalone Streamlit lab for **AgentOps: seeing what multi-agent systems actually did**.
+Fork this repo, then paste the block below to your coding agent. It will add an AgentOps page to your existing private Streamlit course app and use the OpenAI key already in that app’s Streamlit secrets.
 
-The app shows two concurrent functions (`Function_A` and `Function_B`) with an `AgentOps_Logger` recording spans beside them. It needs **no paid API keys**. Model labels in the UI are local simulation labels only.
+```text
+Add the IST 688 AgentOps lab from https://github.com/GilRaitses/ist688-agentops-lab into my existing private Streamlit course app as a page (for example pages/AgentOps.py). Do not replace the home page. Do not create a separate public app unless I ask.
 
-Public repo for class forks: https://github.com/GilRaitses/ist688-agentops-lab
+Adapt the public repo’s app.py into that page. Keep class naming as Function_A, Function_B, and AgentOps_Logger.
 
-## Fork and run locally
+Use the OpenAI key already stored in this course app’s Streamlit secrets (st.secrets). Typical name: OPENAI_API_KEY. Also accept a nested openai.api_key if that is how the app stores it. If another provider key is already present (for example DEEPSEEK_API_KEY), that may be used as a fallback. Do not ask me to paste a key into chat. Never print, log, or display the key. If no key is found, show a short on-page message that Streamlit secrets need an OpenAI (or other provider) key.
 
-1. Fork this repository on GitHub (or copy the files into your own class repo).
+Do not add Anthropic or Claude. Do not commit secrets. Do not change the course app’s visibility.
+
+Add any missing packages from the public repo requirements (streamlit, pydantic, pandas, numpy, plotly, duckdb) to the course app requirements without removing existing ones.
+```
+
+Public repo: https://github.com/GilRaitses/ist688-agentops-lab
+
+The public student app shows two concurrent functions (`Function_A` and `Function_B`) with an `AgentOps_Logger` recording spans beside them. A provider API key is required in Streamlit secrets before the app will run.
+
+## Secrets (required)
+
+The public app and any course-app page adapted from it look for a key in Streamlit secrets, in this order:
+
+1. `OPENAI_API_KEY`
+2. nested `openai.api_key`
+3. `DEEPSEEK_API_KEY`
+4. `API_KEY` (generic provider key)
+
+Example `.streamlit/secrets.toml`:
+
+```toml
+OPENAI_API_KEY = "your-key-here"
+
+# or nested form used by some course apps:
+# [openai]
+# api_key = "your-key-here"
+```
+
+Do not commit `secrets.toml`. The app never prints, logs, or displays the key value. Anthropic / Claude keys are not used.
+
+## Fork and run locally (public repo)
+
+1. Fork this repository on GitHub.
 2. Clone your fork.
 3. Create a virtual environment if you want one.
 4. Install dependencies:
@@ -17,13 +50,14 @@ Public repo for class forks: https://github.com/GilRaitses/ist688-agentops-lab
 pip install -r requirements.txt
 ```
 
-5. Start the app:
+5. Create `.streamlit/secrets.toml` with one provider key (see above).
+6. Start the app:
 
 ```bash
 streamlit run app.py
 ```
 
-6. Open the local URL Streamlit prints (usually `http://localhost:8501`).
+7. Open the local URL Streamlit prints (usually `http://localhost:8501`).
 
 ## Deploy on Streamlit Community Cloud
 
@@ -31,7 +65,8 @@ streamlit run app.py
 2. Sign in at [share.streamlit.io](https://share.streamlit.io).
 3. Click **New app**.
 4. Select your fork, branch `main` and main file path `app.py`.
-5. Deploy. No secrets or API keys are required.
+5. In the app settings, add secrets for `OPENAI_API_KEY`, nested `openai.api_key`, `DEEPSEEK_API_KEY`, or `API_KEY`.
+6. Deploy. Keep the app visibility as you intend; do not change another course app’s visibility.
 
 ## What you will do in the lab
 
