@@ -11,7 +11,7 @@ Use the OpenAI key already stored in this course app’s Streamlit secrets (st.s
 
 Do not add Anthropic or Claude. Do not commit secrets. Do not change the course app’s visibility.
 
-Add any missing packages from the public repo requirements (streamlit, pydantic, pandas, numpy, plotly, duckdb) to the course app requirements without removing existing ones.
+Add any missing packages from the public repo requirements (streamlit, pydantic, pandas, numpy, plotly, duckdb, tiktoken) to the course app requirements without removing existing ones.
 ```
 
 Public repo: https://github.com/GilRaitses/ist688-agentops-lab
@@ -87,4 +87,4 @@ Build a small AgentOps logger (not a database product):
 
 ## Requirements
 
-Listed in `requirements.txt`: `streamlit`, `pydantic`, `pandas`, `numpy`, `plotly`, `duckdb`.
+Listed in `requirements.txt`: `streamlit`, `pydantic`, `pandas`, `numpy`, `plotly`, `duckdb`, `tiktoken`.

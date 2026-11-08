@@ -6,6 +6,7 @@ import duckdb
 import time
 import uuid
 import json
+import tiktoken
 from datetime import datetime
 from pydantic import BaseModel, Field, ValidationError
 from typing import Optional, List, Dict, Any
@@ -167,10 +168,28 @@ class AgentSpanTelemetry(BaseModel):
 # ==========================================
 # HELPER FUNCTIONS
 # ==========================================
+_TOKEN_ENCODING = tiktoken.get_encoding("cl100k_base")
+
+
 def span_to_dict(span: AgentSpanTelemetry) -> Dict[str, Any]:
     if hasattr(span, "model_dump"):
-        return span_to_dict(span)
+        return span.model_dump()
     return span.dict()
+
+
+def count_display_tokens(text: str) -> int:
+    """Tokenizer count of the exact string shown on screen."""
+    return len(_TOKEN_ENCODING.encode(text))
+
+
+def span_token_velocity_tps(span: Dict[str, Any]) -> Optional[float]:
+    """(input_tokens + output_tokens) / (latency_ms / 1000) when latency_ms > 0."""
+    latency_ms = span.get("latency_ms", 0)
+    if latency_ms is None or latency_ms <= 0:
+        return None
+    total_tokens = int(span.get("input_tokens", 0)) + int(span.get("output_tokens", 0))
+    return total_tokens / (latency_ms / 1000.0)
+
 
 def convert_to_toon(spans: List[Dict[str, Any]]) -> str:
     """TOON compaction: field names once at the top then one row per span."""
@@ -239,96 +258,62 @@ st.sidebar.markdown(f"""
 # MODE 1: CLASS SLIDE DECK (locked outline)
 # ==========================================
 if app_mode == "Talk recap":
-    st.title("AgentOps: seeing what multi-agent systems actually did")
-    st.caption("Optional recap of the class talk. Present from the slide deck, then use this app for the lab.")
+    st.title("AgentOps: Multi-agent observability tools for traceable telemetry")
+    st.caption(
+        "Optional recap of the class talk in the 11-slide teaching order. "
+        "Present from the slide deck, then use this app for the lab."
+    )
 
     slides = [
         "Slide 1: Title",
-        "Slide 2: Start the app now",
-        "Slide 3: Where class left off",
-        "Slide 4: What changes with more agents",
-        "Slide 5: Why print statements go dark",
-        "Slide 6: A reasoning trace is spans",
-        "Slide 7: AgentOps as a non-blocking logger",
-        "Slide 8: What to record",
-        "Slide 9: Compact TOON log form",
-        "Slide 10: What a trace helps you notice",
-        "Slide 11: In-class lab brief",
-        "Slide 12: Questions",
+        "Slide 2: What changes with Function_A and Function_B",
+        "Slide 3: Why ordinary print statements go dark",
+        "Slide 4: A reasoning trace is a sequence of named spans",
+        "Slide 5: AgentOps_Logger sits beside the work",
+        "Slide 6: What to record",
+        "Slide 7: Write the log in a compact readable form / TOON",
+        "Slide 8: What a trace helps you notice",
+        "Slide 9: Lab brief: build a small AgentOps logger",
+        "Slide 10: How to start the lab demo",
+        "Slide 11: Questions",
     ]
 
     current_slide = st.select_slider("Presentation Flow Navigator:", options=slides)
 
     if current_slide == slides[0]:
-        st.subheader("AgentOps: seeing what multi-agent systems actually did")
+        st.subheader("AgentOps: Multi-agent observability tools for traceable telemetry")
         st.markdown("""
-        * Multi-Agent Systems teach-in
+        * IST 688 Multi-Agent Systems teach-in
+        * Topic: multi-agent observability tools for traceable telemetry
         * Connects the functions lecture to watching several agents work at once
         * About 10 minutes talk then about 10 minutes lab
-        * Start the app setup now so you can try it during the talk
         """)
         with st.expander("Speaker notes"):
             st.write(
-                "Say that the group is teaching Multi-Agent Systems and that "
-                "the talk connects today's functions lecture to the problem of "
-                "watching several agents work at once. Point to the next slide "
-                "for the README paste block."
+                "Open with the title and the visibility problem. "
+                "How to start the lab demo comes after the lab brief, near the end."
             )
 
     elif current_slide == slides[1]:
-        st.subheader("Start the app now (during the talk)")
+        st.subheader("What changes with Function_A and Function_B")
         st.markdown("""
-        1. Open https://github.com/GilRaitses/ist688-agentops-lab
-        2. Copy the paste block at the top of the README
-        3. Give that block to your coding agent
-
-        Your agent should add the lab as a page in your existing private Streamlit
-        course app (for example `pages/AgentOps.py`) and use the OpenAI key already
-        in that app's Streamlit secrets.
-        """)
-        with st.expander("Speaker notes"):
-            st.write(
-                "Give classmates a moment to open the repo and paste the README "
-                "block to their coding agent so they can use the app while the talk continues."
-            )
-
-    elif current_slide == slides[2]:
-        st.subheader("Where class left off: one model and a tool")
-        st.markdown("""
-        * User asks a question
-        * Model may request a function
-        * Application runs that function
-        * Result returns so the model can answer
-        * Familiar case: looking up weather
-        """)
-        st.code(
-            "user question\n"
-            "model may request a function\n"
-            "application runs the function\n"
-            "result returns so the model can answer",
-            language="text",
-        )
-        st.info("This is still one agent, one context and one visible sequence.")
-        with st.expander("Speaker notes"):
-            st.write(
-                "Walk the functions lecture loop. Emphasize that the student "
-                "can still see the whole path when only one agent is involved."
-            )
-
-    elif current_slide == slides[3]:
-        st.subheader("What changes when more than one agent is involved")
-        st.markdown("""
-        * More than one agent can run at the same time
+        * One model and one tool still form a single visible sequence
+        * Function_A and Function_B can run at the same time
         * The path is no longer one visible sequence
         * A mistake can hide in more than one place
         """)
+        st.code(
+            "Function_A  (runs)\n"
+            "Function_B  (runs at the same time)",
+            language="text",
+        )
         with st.expander("Speaker notes"):
             st.write(
-                "Contrast the single-agent loop with concurrent agents. "
-                "Keep the focus on visibility of the run path."
+                "Contrast the single-agent functions loop with concurrent Function_A "
+                "and Function_B. Keep the focus on visibility of the run path."
             )
 
-    elif current_slide == slides[4]:
+    elif current_slide == slides[2]:
         st.subheader("Why ordinary print statements go dark")
         st.markdown("""
         * Print statements leave out who called whom, how long a step took, and how many tokens it used
@@ -341,8 +326,8 @@ if app_mode == "Talk recap":
                 "when agents run together."
             )
 
-    elif current_slide == slides[5]:
-        st.subheader("A reasoning trace is a sequence of spans")
+    elif current_slide == slides[3]:
+        st.subheader("A reasoning trace is a sequence of named spans")
         c1, c2, c3 = st.columns(3)
         c1.info("**Thought**\n\nPlanning before action")
         c2.warning("**Tool call**\n\nNamed call with arguments")
@@ -359,10 +344,10 @@ if app_mode == "Talk recap":
                 "Draw a parent and child so students can see the caller and the target."
             )
 
-    elif current_slide == slides[6]:
-        st.subheader("AgentOps as a non-blocking logger")
+    elif current_slide == slides[4]:
+        st.subheader("AgentOps_Logger sits beside the work")
         st.markdown("""
-        * The logger sits beside the agents not inside their answers
+        * AgentOps_Logger sits beside the agents not inside their answers
         * It records each span while the agents keep running
         * Records are pushed to a queue
         * Logging does not make the agents wait
@@ -379,7 +364,7 @@ if app_mode == "Talk recap":
                 "functions keep running while records enter a queue."
             )
 
-    elif current_slide == slides[7]:
+    elif current_slide == slides[5]:
         st.subheader("What to record")
         st.markdown("""
         Lab fields checked with a Pydantic model:
@@ -396,12 +381,13 @@ if app_mode == "Talk recap":
                 "Stay with the lab fields. Avoid storage columns the lab does not use."
             )
 
-    elif current_slide == slides[8]:
-        st.subheader("Writing the log in a compact form")
+    elif current_slide == slides[6]:
+        st.subheader("Write the log in a compact readable form / TOON")
         st.markdown("""
-        * Field names declared once at the top
+        * TOON declares field names once at the top
         * One row per span under that header
-        * Keeps the log readable and smaller than verbose JSON
+        * The lab compares the exact JSON string and the exact TOON string on screen
+        * Token counts are tokenizer counts of those displayed strings
         """)
         st.code(
             "trace_stream[2]{caller,target,latency_ms,input_tokens,output_tokens}:\n"
@@ -409,21 +395,20 @@ if app_mode == "Talk recap":
             "  Function_B,search_tool,510,350,190",
             language="text",
         )
-        st.caption(
-            "Present TOON as a compact log form. Do not treat it as a measured production saving."
-        )
         with st.expander("Speaker notes"):
             st.write(
-                "Show the header-plus-rows shape. Avoid inventing compression ratios "
-                "or token-savings percents."
+                "Show the header-plus-rows shape. Teach what TOON is and what the "
+                "on-screen JSON-versus-TOON comparison measures. Do not invent "
+                "savings percents or compression slogans."
             )
 
-    elif current_slide == slides[9]:
+    elif current_slide == slides[7]:
         st.subheader("What a trace helps you notice")
         st.markdown("""
         * Who called whom
         * How long a step took
         * How many tokens a step used
+        * Token velocity for a span: (input_tokens + output_tokens) over that span's latency
         * Silent execution failures become visible
         """)
         st.info("Usefulness: debugging and cost visibility in a multi-agent run.")
@@ -432,8 +417,8 @@ if app_mode == "Talk recap":
                 "Keep claims grounded in what a complete trace makes visible."
             )
 
-    elif current_slide == slides[10]:
-        st.subheader("In-class lab brief")
+    elif current_slide == slides[8]:
+        st.subheader("Lab brief: build a small AgentOps logger")
         st.markdown("""
         Students build a small AgentOps logger not a database product.
 
@@ -444,13 +429,26 @@ if app_mode == "Talk recap":
 
         **Rubric (10 points):** 3 for non-blocking concurrency, 4 for the schema and 3 for the TOON output.
         """)
-        st.success(
-            "Repo and README paste block were shared at the start of the talk: "
-            "https://github.com/GilRaitses/ist688-agentops-lab"
-        )
         with st.expander("Speaker notes"):
             st.write(
-                "Keep this slide short. Setup already happened on the opening slide."
+                "Keep this slide short so the how-to-start demo and lab can begin."
+            )
+
+    elif current_slide == slides[9]:
+        st.subheader("How to start the lab demo")
+        st.markdown("""
+        1. Open https://github.com/GilRaitses/ist688-agentops-lab
+        2. Copy the paste block at the top of the README
+        3. Give that block to your coding agent
+
+        Your agent should add the lab as a page in your existing private Streamlit
+        course app (for example `pages/AgentOps.py`) and use the OpenAI key already
+        in that app's Streamlit secrets.
+        """)
+        with st.expander("Speaker notes"):
+            st.write(
+                "This slide comes after the lab brief. Walk through the README paste "
+                "block and the local or course-app start path."
             )
 
     else:
@@ -668,22 +666,62 @@ elif app_mode == "Interactive In-Class Lab Sandbox":
         st.subheader("Step 3: TOON string vs verbose JSON")
         st.markdown("""
         TOON declares field names once at the top then stacks one row per span.
-        Use it as a compact readable log form not as a measured production claim.
+        The comparison below counts tokens of the exact JSON string and the exact
+        TOON string shown in the text areas. Span velocity uses each span's own
+        recorded `input_tokens`, `output_tokens` and `latency_ms`.
         """)
+
+        recent_spans = (
+            st.session_state.telemetry_logs[-3:]
+            if st.session_state.telemetry_logs
+            else []
+        )
+        raw_json_str = json.dumps(recent_spans, indent=2) if recent_spans else "{}"
+        toon_str = convert_to_toon(recent_spans)
 
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("#### Verbose JSON")
-            raw_json_str = (
-                json.dumps(st.session_state.telemetry_logs[-3:], indent=2)
-                if st.session_state.telemetry_logs
-                else "{}"
-            )
             st.text_area("JSON view:", value=raw_json_str, height=260)
+            st.metric(
+                "Token count of the JSON view",
+                count_display_tokens(raw_json_str),
+            )
         with col2:
             st.markdown("#### Compact TOON")
-            toon_str = convert_to_toon(st.session_state.telemetry_logs[-3:])
             st.text_area("TOON view:", value=toon_str, height=260)
+            st.metric(
+                "Token count of the TOON view",
+                count_display_tokens(toon_str),
+            )
+
+        st.subheader("Per-span token velocity")
+        st.caption(
+            "tokens/sec = (input_tokens + output_tokens) / (latency_ms / 1000) "
+            "when latency_ms > 0"
+        )
+        if recent_spans:
+            velocity_rows = []
+            for span in recent_spans:
+                tps = span_token_velocity_tps(span)
+                velocity_rows.append(
+                    {
+                        "caller": span.get("caller"),
+                        "target": span.get("target"),
+                        "latency_ms": span.get("latency_ms"),
+                        "input_tokens": span.get("input_tokens"),
+                        "output_tokens": span.get("output_tokens"),
+                        "tokens_per_sec": (
+                            round(tps, 2) if tps is not None else None
+                        ),
+                    }
+                )
+            st.dataframe(
+                pd.DataFrame(velocity_rows),
+                use_container_width=True,
+            )
+        else:
+            st.info("No spans recorded yet. Run concurrent functions in step 1.")
 
     with tabs[3]:
         st.subheader("Step 4: Lab rubric (10 points)")
